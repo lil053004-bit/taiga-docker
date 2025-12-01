@@ -27,6 +27,10 @@ x-environment:
   RABBITMQ_PASS: "${RABBITMQ_PASS}"
   # Telemetry settings
   ENABLE_TELEMETRY: "${ENABLE_TELEMETRY}"
+  # Auto-assign settings
+  AUTO_ASSIGN_ADMIN_USERNAME: "${AUTO_ASSIGN_ADMIN_USERNAME}"
+  AUTO_ASSIGN_ADMIN_EMAIL: "${AUTO_ASSIGN_ADMIN_EMAIL}"
+  AUTO_ASSIGN_ENABLED: "${AUTO_ASSIGN_ENABLED}"
   # ...your customizations go here
 
 x-volumes:
@@ -34,7 +38,9 @@ x-volumes:
   # These volumens will be used by taiga-back and taiga-async.
   - taiga-static-data:/taiga-back/static
   - taiga-media-data:/taiga-back/media
-  # - ./config.py:/taiga-back/settings/config.py
+  - ./taiga-custom:/taiga-back/custom
+  - ./taiga-custom/config.py:/taiga-back/settings/config.py
+  - ./logs:/taiga-back/logs
 
 services:
   taiga-db:
