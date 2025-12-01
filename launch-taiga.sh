@@ -1,10 +1,44 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#
-# Copyright (c) 2021-present Kaleidos INC
+# Taiga Launch Script
+# Starts all Taiga services with automatic initialization
 
-set -x
-exec docker compose -f docker-compose.yml up -d $@
+set -e
+
+echo "=========================================="
+echo "Launching Taiga"
+echo "=========================================="
+echo ""
+
+if [ ! -f ".env" ]; then
+    echo "✗ Error: .env file not found!"
+    echo "  Please create .env file with your configuration."
+    exit 1
+fi
+
+echo "✓ Configuration file found"
+echo ""
+
+echo "Starting Docker containers..."
+docker compose up -d
+
+echo ""
+echo "Waiting for services to initialize (60 seconds)..."
+sleep 60
+
+echo ""
+echo "=========================================="
+echo "✓ Taiga Started Successfully!"
+echo "=========================================="
+echo ""
+echo "Services are now running at:"
+echo "  Main URL: https://kairui.lhwebs.com"
+echo "  Admin Panel: https://kairui.lhwebs.com/admin/"
+echo ""
+echo "Default Login Credentials:"
+echo "  Username: adsadmin"
+echo "  Password: A52290120a"
+echo ""
+echo "Check status: docker compose ps"
+echo "View logs: docker compose logs -f"
+echo ""
