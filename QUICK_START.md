@@ -45,6 +45,7 @@ bash initialize.sh
 ### 步骤 5: 验证部署（可选） / Step 5: Verify Deployment (Optional)
 
 ```bash
+bash verify_custom_app.sh
 bash scripts/verify_installation.sh
 ```
 
@@ -150,6 +151,53 @@ docker compose restart taiga-db
 # 等待并重新初始化 / Wait and reinitialize
 sleep 10
 bash initialize.sh
+```
+
+### 问题 5: 自动分配功能不工作 / Issue 5: Auto-Assign Not Working
+
+**解决方案 / Solution:**
+```bash
+# 1. 验证自定义应用是否加载 / Verify custom app is loaded
+bash verify_custom_app.sh
+
+# 2. 检查配置 / Check configuration
+docker compose exec -T taiga-back python -c "
+from django.conf import settings
+print('Custom app loaded:', 'custom' in settings.INSTALLED_APPS)
+print('Auto-assign enabled:', getattr(settings, 'AUTO_ASSIGN_ENABLED', False))
+print('Admin username:', getattr(settings, 'AUTO_ASSIGN_ADMIN_USERNAME', 'not set'))
+"
+
+# 3. 如果应用未加载，重启服务 / If app not loaded, restart services
+docker compose down
+docker compose up -d
+sleep 30
+bash initialize.sh
+
+# 4. 查看自定义应用日志 / Check custom app logs
+tail -f logs/custom.log
+```
+
+### 问题 6: 无法保存项目详情 / Issue 6: Cannot Save Project Details
+
+**解决方案 / Solution:**
+```bash
+# 1. 检查后端日志中的错误 / Check backend logs for errors
+docker compose logs taiga-back --tail 100
+
+# 2. 验证 CSRF 配置 / Verify CSRF configuration
+docker compose exec -T taiga-back python -c "
+import os
+print('CSRF_TRUSTED_ORIGINS:', os.getenv('CSRF_TRUSTED_ORIGINS'))
+print('ALLOWED_HOSTS:', os.getenv('ALLOWED_HOSTS'))
+"
+
+# 3. 清除浏览器缓存并重试 / Clear browser cache and retry
+# 使用 Ctrl+Shift+Delete 或无痕模式
+
+# 4. 检查 Nginx 配置 / Check Nginx configuration
+docker compose exec taiga-gateway nginx -t
+docker compose restart taiga-gateway
 ```
 
 ---

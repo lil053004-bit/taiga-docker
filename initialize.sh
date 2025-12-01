@@ -10,9 +10,11 @@ echo "Taiga Initialization Script"
 echo "=========================================="
 echo ""
 
-# Load environment variables
+# Load environment variables safely (remove inline comments)
 if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+    set -a
+    source <(grep -v '^#' .env | sed 's/#.*$//' | grep -E '^[A-Z_]+=')
+    set +a
 fi
 
 # Default values

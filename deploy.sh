@@ -44,10 +44,25 @@ echo ""
 
 echo "第5步：验证部署..."
 echo "Step 5: Verifying deployment..."
+
+echo "  - 检查自定义应用是否加载 / Checking custom app..."
+docker compose exec -T taiga-back python -c "
+from django.conf import settings
+if 'custom' in settings.INSTALLED_APPS:
+    print('    ✓ Custom app loaded successfully')
+else:
+    print('    ✗ Custom app NOT loaded')
+" 2>/dev/null || echo "    ⚠ Could not verify (container may still be starting)"
+
+echo "  - 检查自动分配配置 / Checking auto-assign config..."
+docker compose exec -T taiga-back python -c "
+from django.conf import settings
+print(f'    ✓ Auto-assign enabled: {getattr(settings, \"AUTO_ASSIGN_ENABLED\", False)}')
+print(f'    ✓ Admin username: {getattr(settings, \"AUTO_ASSIGN_ADMIN_USERNAME\", \"not set\")}')
+" 2>/dev/null || echo "    ⚠ Could not verify configuration"
+
 if [ -f scripts/verify_installation.sh ]; then
     bash scripts/verify_installation.sh
-else
-    echo "⚠ Verification script not found (optional)"
 fi
 echo ""
 

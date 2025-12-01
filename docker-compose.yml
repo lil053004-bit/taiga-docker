@@ -49,6 +49,7 @@ x-volumes:
   - taiga-media-data:/taiga-back/media
   - ./taiga-custom:/taiga-back/custom
   - ./logs:/taiga-back/logs
+  - ./taiga-back/local.py:/taiga-back/settings/local.py:ro
 
 services:
   taiga-db:
