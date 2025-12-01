@@ -44,13 +44,35 @@ sleep 30
 docker compose ps
 ```
 
-### 步骤4：运行初始化命令（仅首次部署或重置后）
-```bash
-# 创建管理员用户
-docker compose exec taiga-back python manage.py initialize_taiga
+### 步骤4：运行初始化脚本（仅首次部署或重置后）
 
-# 运行数据库迁移（如果需要）
+**推荐方法：使用自动化脚本**
+```bash
+# 运行初始化脚本（会自动创建管理员用户和运行迁移）
+bash initialize.sh
+```
+
+**手动方法（如果脚本失败）：**
+```bash
+# 1. 运行数据库迁移
 docker compose exec taiga-back python manage.py migrate
+
+# 2. 创建管理员用户
+docker compose exec -T taiga-back python manage.py shell <<EOF
+from django.contrib.auth import get_user_model
+User = get_user_model()
+user = User.objects.create_superuser(
+    username='adsadmin',
+    email='lhweave@gmail.com',
+    password='A52290120a'
+)
+user.is_active = True
+user.is_staff = True
+user.is_superuser = True
+user.lang = 'zh-Hans'
+user.save()
+print('✓ Admin user created successfully')
+EOF
 ```
 
 ### 步骤5：验证修复
@@ -118,11 +140,45 @@ docker compose up -d --force-recreate taiga-gateway taiga-back taiga-async
 
 ### 如果初始化失败：
 
+**方法1：使用初始化脚本**
 ```bash
-# 手动创建管理员用户
-docker compose exec taiga-back python manage.py createsuperuser
+bash initialize.sh
+```
 
-# 检查数据库连接
+**方法2：使用Django Shell手动创建**
+```bash
+docker compose exec -T taiga-back python manage.py shell <<EOF
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+# 检查用户是否已存在
+if User.objects.filter(username='adsadmin').exists():
+    user = User.objects.get(username='adsadmin')
+    print('User exists, updating...')
+else:
+    user = User.objects.create_superuser(
+        username='adsadmin',
+        email='lhweave@gmail.com',
+        password='A52290120a'
+    )
+    print('User created')
+
+user.is_active = True
+user.is_staff = True
+user.is_superuser = True
+user.lang = 'zh-Hans'
+user.save()
+print(f'✓ Admin user ready: {user.username}')
+EOF
+```
+
+**方法3：交互式创建（需要手动输入）**
+```bash
+docker compose exec taiga-back python manage.py createsuperuser
+```
+
+**检查数据库连接：**
+```bash
 docker compose exec taiga-back python manage.py dbshell
 ```
 
@@ -156,6 +212,25 @@ docker compose exec taiga-back python manage.py dbshell
 ## 后续维护
 
 ### 添加新用户：
+
+**方法1：使用Django Shell（推荐，可设置中文）**
+```bash
+docker compose exec -T taiga-back python manage.py shell <<EOF
+from django.contrib.auth import get_user_model
+User = get_user_model()
+user = User.objects.create_user(
+    username='newuser',
+    email='newuser@example.com',
+    password='password123'
+)
+user.is_active = True
+user.lang = 'zh-Hans'
+user.save()
+print(f'✓ User created: {user.username}')
+EOF
+```
+
+**方法2：交互式创建**
 ```bash
 docker compose exec taiga-back python manage.py createsuperuser
 ```
