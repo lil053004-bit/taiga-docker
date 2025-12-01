@@ -1,4 +1,6 @@
 {
+  "api": "https://kairui.lhwebs.com/api/v1/",
+  "eventsUrl": "wss://kairui.lhwebs.com/events",
   "customFields": {
     "showInList": true,
     "showInKanban": true,
