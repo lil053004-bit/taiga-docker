@@ -31,6 +31,8 @@ x-environment:
   AUTO_ASSIGN_ADMIN_USERNAME: "${AUTO_ASSIGN_ADMIN_USERNAME}"
   AUTO_ASSIGN_ADMIN_EMAIL: "${AUTO_ASSIGN_ADMIN_EMAIL}"
   AUTO_ASSIGN_ENABLED: "${AUTO_ASSIGN_ENABLED}"
+  # Language settings
+  DEFAULT_USER_LANGUAGE: "zh-Hans"
   # ...your customizations go here
 
 x-volumes:
@@ -113,11 +115,13 @@ services:
       TAIGA_WEBSOCKETS_URL: "${WEBSOCKETS_SCHEME}://${TAIGA_DOMAIN}"
       TAIGA_SUBPATH: "${SUBPATH}"
       # ...your customizations go here
+    volumes:
+      - ./taiga-front/conf.json:/usr/share/nginx/html/conf.json:ro
+      - ./taiga-front/custom-fields.js:/usr/share/nginx/html/custom-fields.js:ro
+      - ./taiga-front/custom-fields.css:/usr/share/nginx/html/custom-fields.css:ro
     networks:
       - taiga
     restart: always
-    # volumes:
-    #   - ./conf.json:/usr/share/nginx/html/conf.json
 
   taiga-events:
     image: taigaio/taiga-events:latest

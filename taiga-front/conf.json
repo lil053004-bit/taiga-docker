@@ -1,0 +1,10 @@
+{
+  "customFields": {
+    "showInList": true,
+    "showInKanban": true,
+    "showInBacklog": true,
+    "maxFieldsToShow": 3,
+    "layout": "compact"
+  },
+  "defaultLanguage": "zh-Hans"
+}

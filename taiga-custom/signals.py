@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 ADMIN_USERNAME = getattr(settings, 'AUTO_ASSIGN_ADMIN_USERNAME', 'adsadmin')
 AUTO_ASSIGN_ENABLED = getattr(settings, 'AUTO_ASSIGN_ENABLED', True)
+DEFAULT_USER_LANGUAGE = getattr(settings, 'DEFAULT_USER_LANGUAGE', 'zh-Hans')
 
 def get_admin_user():
     try:
@@ -126,4 +127,15 @@ def auto_assign_issue(sender, instance, created, **kwargs):
             except Exception as e:
                 logger.error(f"Error auto-assigning issue: {str(e)}")
 
-logger.info("Taiga Auto-Assign signals loaded successfully")
+@receiver(post_save, sender='users.User')
+def set_default_language_chinese(sender, instance, created, **kwargs):
+    """Automatically set new users' language to Chinese"""
+    if created and not instance.lang:
+        try:
+            instance.lang = DEFAULT_USER_LANGUAGE
+            instance.save(update_fields=['lang'])
+            logger.info(f"✓ Set language to {DEFAULT_USER_LANGUAGE} for user: {instance.username}")
+        except Exception as e:
+            logger.error(f"Error setting default language for user {instance.username}: {str(e)}")
+
+logger.info("Taiga Auto-Assign and Language signals loaded successfully")
