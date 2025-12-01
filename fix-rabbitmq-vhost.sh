@@ -1,12 +1,15 @@
 #!/bin/bash
 
-# Fix RabbitMQ vhost issue for Taiga
-# This script creates the missing 'taiga' vhost in both RabbitMQ containers
+# Fix RabbitMQ vhost and user configuration for Taiga
+# This script creates the missing 'taiga' user and vhost in both RabbitMQ containers
 
 set -e
 
+# Load environment variables
+source .env
+
 echo "=========================================="
-echo "Fixing RabbitMQ vhost configuration"
+echo "Fixing RabbitMQ configuration"
 echo "=========================================="
 
 # Check if containers are running
@@ -14,17 +17,27 @@ echo ""
 echo "Step 1: Checking container status..."
 docker compose ps | grep rabbitmq || true
 
-# Function to setup vhost in a container
-setup_vhost() {
+# Function to setup RabbitMQ in a container
+setup_rabbitmq() {
     local container=$1
     echo ""
-    echo "Setting up vhost in $container..."
+    echo "Setting up RabbitMQ in $container..."
 
     # Wait for RabbitMQ to be ready
     echo "Waiting for RabbitMQ to be ready..."
     sleep 5
 
-    # Check if vhost already exists
+    # Check if user exists
+    if docker exec $container rabbitmqctl list_users | grep -q "^taiga"; then
+        echo "✓ User 'taiga' already exists in $container"
+    else
+        echo "Creating user 'taiga' in $container..."
+        docker exec $container rabbitmqctl add_user taiga "${RABBITMQ_PASS}"
+        docker exec $container rabbitmqctl set_user_tags taiga administrator
+        echo "✓ User 'taiga' created"
+    fi
+
+    # Check if vhost exists
     if docker exec $container rabbitmqctl list_vhosts | grep -q "^taiga$"; then
         echo "✓ vhost 'taiga' already exists in $container"
     else
@@ -38,20 +51,22 @@ setup_vhost() {
     docker exec $container rabbitmqctl set_permissions -p taiga taiga ".*" ".*" ".*"
     echo "✓ Permissions set"
 
-    # List vhosts to verify
+    # List users and vhosts to verify
+    echo "Current users in $container:"
+    docker exec $container rabbitmqctl list_users
     echo "Current vhosts in $container:"
     docker exec $container rabbitmqctl list_vhosts
 }
 
-# Setup vhost in events RabbitMQ
+# Setup RabbitMQ in events container
 echo ""
 echo "Step 2: Configuring taiga-events-rabbitmq..."
-setup_vhost "project-taiga-events-rabbitmq-1"
+setup_rabbitmq "project-taiga-events-rabbitmq-1"
 
-# Setup vhost in async RabbitMQ
+# Setup RabbitMQ in async container
 echo ""
 echo "Step 3: Configuring taiga-async-rabbitmq..."
-setup_vhost "project-taiga-async-rabbitmq-1"
+setup_rabbitmq "project-taiga-async-rabbitmq-1"
 
 # Restart related services
 echo ""
