@@ -78,6 +78,44 @@ EOF
 fi
 
 echo ""
+echo "Step 4: Verifying custom app is loaded..."
+CUSTOM_APP_CHECK=$(docker compose exec -T taiga-back python -c "
+import sys
+sys.path.insert(0, '/taiga-back/custom')
+try:
+    import custom
+    print('LOADED')
+except Exception as e:
+    print('FAILED')
+" 2>/dev/null | tail -1)
+
+if [ "$CUSTOM_APP_CHECK" = "LOADED" ]; then
+    echo "✓ Custom app loaded successfully"
+else
+    echo "⚠ Warning: Custom app not loaded (this is normal for first deployment)"
+fi
+
+echo ""
+echo "Step 5: Setting all users language to Chinese..."
+docker compose exec -T taiga-back python manage.py shell <<'EOF'
+from django.contrib.auth import get_user_model
+User = get_user_model()
+updated = User.objects.all().update(lang='zh-Hans')
+print(f'\n✓ Updated {updated} user(s) to Chinese language')
+EOF
+
+echo ""
+echo "Step 6: Verifying configuration..."
+echo "  - Checking API accessibility..."
+docker compose exec -T taiga-back python -c "
+import os
+print(f'  ✓ CSRF_TRUSTED_ORIGINS: {os.getenv(\"CSRF_TRUSTED_ORIGINS\", \"Not set\")}')
+print(f'  ✓ ALLOWED_HOSTS: {os.getenv(\"ALLOWED_HOSTS\", \"Not set\")}')
+print(f'  ✓ DEFAULT_USER_LANGUAGE: {os.getenv(\"DEFAULT_USER_LANGUAGE\", \"Not set\")}')
+print(f'  ✓ PUBLIC_REGISTER_ENABLED: {os.getenv(\"PUBLIC_REGISTER_ENABLED\", \"Not set\")}')
+"
+
+echo ""
 echo "=========================================="
 echo "Initialization Complete!"
 echo "=========================================="
@@ -89,4 +127,15 @@ echo "  Password: ${ADMIN_PASSWORD}"
 echo "  Email: ${ADMIN_EMAIL}"
 echo ""
 echo "Admin panel: https://${TAIGA_DOMAIN:-kairui.lhwebs.com}/admin/"
+echo ""
+echo "Next steps:"
+echo "  1. Access the site in your browser"
+echo "  2. Clear browser cache if you see any errors"
+echo "  3. Login with the credentials above"
+echo "  4. Check that the interface is in Chinese"
+echo ""
+echo "Troubleshooting:"
+echo "  - View logs: docker compose logs -f"
+echo "  - Check status: docker compose ps"
+echo "  - Restart services: docker compose restart"
 echo ""

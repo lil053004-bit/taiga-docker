@@ -38,6 +38,8 @@ x-environment:
   # Django security settings for HTTPS
   CSRF_TRUSTED_ORIGINS: "${CSRF_TRUSTED_ORIGINS}"
   ALLOWED_HOSTS: "${ALLOWED_HOSTS}"
+  # Python path to load custom app
+  PYTHONPATH: "/taiga-back:/taiga-back/custom"
   # ...your customizations go here
 
 x-volumes:
@@ -121,8 +123,9 @@ services:
       # ...your customizations go here
     volumes:
       - ./taiga-front/conf.json:/usr/share/nginx/html/conf.json:ro
-      - ./taiga-front/custom-fields.js:/usr/share/nginx/html/custom-fields.js:ro
-      - ./taiga-front/custom-fields.css:/usr/share/nginx/html/custom-fields.css:ro
+      # Custom fields - uncomment when basic deployment is working
+      # - ./taiga-front/custom-fields.js:/usr/share/nginx/html/custom-fields.js:ro
+      # - ./taiga-front/custom-fields.css:/usr/share/nginx/html/custom-fields.css:ro
     networks:
       - taiga
     restart: always

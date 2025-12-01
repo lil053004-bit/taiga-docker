@@ -1,199 +1,270 @@
-# Taiga 快速启动指南
+# Taiga 快速部署指南 / Quick Start Guide
 
-## 快速部署（3步完成）
+## 一键部署（推荐） / One-Command Deployment (Recommended)
 
-### 1️⃣ 重启服务
+最简单的部署方式：
+
 ```bash
-cd /www/kairuiads/project
+bash deploy.sh
+```
+
+就这么简单！脚本会自动完成所有步骤。
+
+That's it! The script will handle everything automatically.
+
+---
+
+## 手动部署 / Manual Deployment
+
+如果需要手动控制每个步骤 / If you need to control each step manually:
+
+### 步骤 1: 停止现有服务 / Step 1: Stop Existing Services
+
+```bash
 docker compose down
+```
+
+### 步骤 2: 启动所有服务 / Step 2: Start All Services
+
+```bash
 docker compose up -d
 ```
 
-### 2️⃣ 等待启动
+### 步骤 3: 等待服务就绪 / Step 3: Wait for Services
+
 ```bash
 sleep 30
-docker compose ps
 ```
 
-### 3️⃣ 初始化系统
+### 步骤 4: 运行初始化 / Step 4: Run Initialization
+
 ```bash
 bash initialize.sh
 ```
 
-## 登录信息
+### 步骤 5: 验证部署（可选） / Step 5: Verify Deployment (Optional)
 
-- **网址**: https://kairui.lhwebs.com
-- **用户名**: adsadmin
-- **密码**: A52290120a
-- **管理面板**: https://kairui.lhwebs.com/admin/
-
-## 验证修复
-
-### 检查401错误是否解决
 ```bash
-# 应该返回 200 OK
-curl -I https://kairui.lhwebs.com/api/v1/
+bash scripts/verify_installation.sh
 ```
 
-### 检查nginx配置
-```bash
-# 应该看到3个 X-Forwarded-Proto 行
-docker compose exec taiga-gateway cat /etc/nginx/conf.d/default.conf | grep X-Forwarded-Proto
-```
+---
 
-### 查看服务状态
+## 登录信息 / Login Credentials
+
+- **URL**: https://kairui.lhwebs.com
+- **用户名 / Username**: adsadmin
+- **密码 / Password**: A52290120a
+- **管理面板 / Admin Panel**: https://kairui.lhwebs.com/admin/
+
+---
+
+## 常用命令 / Useful Commands
+
+### 查看服务状态 / Check Service Status
 ```bash
 docker compose ps
 ```
 
-### 查看日志
+### 查看日志 / View Logs
 ```bash
-# 后端日志
-docker compose logs taiga-back --tail 50
-
-# 所有服务日志
-docker compose logs --tail 20
-```
-
-## 常用命令
-
-### 重启特定服务
-```bash
-docker compose restart taiga-gateway
-docker compose restart taiga-back
-```
-
-### 查看环境变量
-```bash
-docker compose exec taiga-back env | grep -E "CSRF|ALLOWED|PUBLIC"
-```
-
-### 手动创建用户（如果初始化脚本失败）
-```bash
-docker compose exec -T taiga-back python manage.py shell <<'EOF'
-from django.contrib.auth import get_user_model
-User = get_user_model()
-user = User.objects.create_superuser(
-    username='adsadmin',
-    email='lhweave@gmail.com',
-    password='A52290120a'
-)
-user.lang = 'zh-Hans'
-user.save()
-print('✓ 管理员用户创建成功')
-EOF
-```
-
-## 已修复的问题
-
-✅ **401认证错误**
-- 添加了 X-Forwarded-Proto 和 X-Forwarded-For 头
-- Django现在能正确识别HTTPS请求
-- CSRF保护正常工作
-
-✅ **自动初始化问题**
-- 移除了不稳定的自动初始化代码
-- 提供了稳定的初始化脚本
-- 避免竞态条件
-
-✅ **用户注册控制**
-- 禁用了公开注册
-- 只有管理员可以创建用户
-- 提高了系统安全性
-
-## 新增功能
-
-### 自动分配功能
-当创建新的用户故事、任务或问题时，会自动分配给管理员用户 (adsadmin)
-
-### 中文默认语言
-所有新用户默认使用中文界面
-
-### 自定义字段支持
-支持在列表、看板和待办事项中显示自定义字段
-
-## 故障排除
-
-### 如果还是401错误
-
-1. **重启网关服务**
-```bash
-docker compose restart taiga-gateway
-```
-
-2. **强制重新创建容器**
-```bash
-docker compose up -d --force-recreate taiga-gateway taiga-back
-```
-
-3. **清除浏览器缓存和Cookie**
-- 按 Ctrl+Shift+Delete
-- 清除所有缓存和Cookie
-- 重新登录
-
-### 如果无法登录
-
-1. **重置管理员密码**
-```bash
-docker compose exec -T taiga-back python manage.py shell <<'EOF'
-from django.contrib.auth import get_user_model
-User = get_user_model()
-user = User.objects.get(username='adsadmin')
-user.set_password('A52290120a')
-user.save()
-print('✓ 密码已重置')
-EOF
-```
-
-2. **检查用户状态**
-```bash
-docker compose exec -T taiga-back python manage.py shell <<'EOF'
-from django.contrib.auth import get_user_model
-User = get_user_model()
-user = User.objects.get(username='adsadmin')
-print(f'Active: {user.is_active}')
-print(f'Staff: {user.is_staff}')
-print(f'Superuser: {user.is_superuser}')
-EOF
-```
-
-### 如果服务无法启动
-
-1. **查看详细日志**
-```bash
+# 所有服务 / All services
 docker compose logs -f
+
+# 特定服务 / Specific service
+docker compose logs -f taiga-back
+docker compose logs -f taiga-front
+docker compose logs -f taiga-gateway
 ```
 
-2. **检查端口占用**
+### 重启服务 / Restart Services
 ```bash
-netstat -tlnp | grep 9090
+# 所有服务 / All services
+docker compose restart
+
+# 特定服务 / Specific service
+docker compose restart taiga-back
+docker compose restart taiga-front
 ```
 
-3. **清理并重启**
+### 停止服务 / Stop Services
 ```bash
-docker compose down -v
-docker compose up -d
-sleep 30
+docker compose down
+```
+
+---
+
+## 故障排除 / Troubleshooting
+
+### 问题 1: 看到 401 错误 / Issue 1: Seeing 401 Errors
+
+**解决方案 / Solution:**
+```bash
+# 验证 Nginx 配置 / Verify Nginx configuration
+docker compose exec taiga-gateway nginx -t
+
+# 检查代理头 / Check proxy headers
+docker compose exec taiga-gateway grep -c "X-Forwarded-Proto" /etc/nginx/conf.d/default.conf
+# 应该输出 4 / Should output: 4
+
+# 重启网关 / Restart gateway
+docker compose restart taiga-gateway
+```
+
+### 问题 2: JavaScript 错误 / Issue 2: JavaScript Errors
+
+**解决方案 / Solution:**
+1. 清除浏览器缓存 / Clear browser cache (Ctrl+Shift+Delete)
+2. 使用无痕模式 / Use incognito/private mode
+3. 强制刷新 / Hard refresh (Ctrl+Shift+R or Cmd+Shift+R)
+
+### 问题 3: 界面不是中文 / Issue 3: Interface Not in Chinese
+
+**解决方案 / Solution:**
+```bash
+# 设置所有用户为中文 / Set all users to Chinese
+docker compose exec -T taiga-back python manage.py shell <<'EOF'
+from django.contrib.auth import get_user_model
+User = get_user_model()
+updated = User.objects.all().update(lang='zh-Hans')
+print(f'Updated {updated} users to Chinese')
+EOF
+
+# 重启服务 / Restart services
+docker compose restart
+```
+
+### 问题 4: 无法连接数据库 / Issue 4: Cannot Connect to Database
+
+**解决方案 / Solution:**
+```bash
+# 检查数据库状态 / Check database status
+docker compose ps taiga-db
+
+# 查看数据库日志 / View database logs
+docker compose logs taiga-db
+
+# 重启数据库 / Restart database
+docker compose restart taiga-db
+
+# 等待并重新初始化 / Wait and reinitialize
+sleep 10
 bash initialize.sh
 ```
 
-## 数据备份
+---
 
-### 备份数据库
+## 高级操作 / Advanced Operations
+
+### 备份数据库 / Backup Database
 ```bash
-docker compose exec taiga-db pg_dump -U taiga taiga > backup_$(date +%Y%m%d_%H%M%S).sql
+docker compose exec taiga-db pg_dump -U taiga taiga > backup_$(date +%Y%m%d).sql
 ```
 
-### 恢复数据库
+### 恢复数据库 / Restore Database
 ```bash
-cat backup_20241201_120000.sql | docker compose exec -T taiga-db psql -U taiga taiga
+cat backup_20231201.sql | docker compose exec -T taiga-db psql -U taiga taiga
 ```
 
-## 需要帮助？
+### 清理并重新部署 / Clean and Redeploy
+```bash
+# 警告：这将删除所有数据！/ Warning: This will delete all data!
+docker compose down -v
+bash deploy.sh
+```
 
-详细文档请查看: `DEPLOYMENT_INSTRUCTIONS.md`
+---
 
-遇到问题请提供：
-1. 错误截图
-2. 日志输出 (`docker compose logs`)
-3. 浏览器开发者工具的网络标签页截图
+## 已修复的问题 / Fixed Issues
+
+✅ **401 认证错误 / 401 Authentication Errors**
+- 添加了所有必需的代理头 / Added all required proxy headers
+- Django 正确识别 HTTPS 请求 / Django correctly identifies HTTPS requests
+- CSRF 保护正常工作 / CSRF protection works correctly
+
+✅ **JavaScript 错误 / JavaScript Errors**
+- 简化前端配置避免冲突 / Simplified frontend config to avoid conflicts
+- 确保 conf.json 正确加载 / Ensure conf.json loads correctly
+
+✅ **默认语言设置 / Default Language Settings**
+- 所有用户默认使用中文 / All users default to Chinese
+- 前端界面默认显示中文 / Frontend interface defaults to Chinese
+- 自动设置新用户语言 / Automatically set new user language
+
+✅ **部署流程简化 / Deployment Process Simplified**
+- 一键部署脚本 / One-command deployment script
+- 自动验证和配置 / Automatic verification and configuration
+- 清晰的错误提示 / Clear error messages
+
+---
+
+## 配置文件说明 / Configuration Files
+
+- **`.env`**: 环境变量配置 / Environment variables
+- **`docker-compose.yml`**: Docker 服务配置 / Docker services configuration
+- **`taiga-gateway/taiga.conf`**: Nginx 反向代理配置 / Nginx reverse proxy config
+- **`taiga-front/conf.json`**: 前端配置 / Frontend configuration
+- **`initialize.sh`**: 初始化脚本 / Initialization script
+- **`deploy.sh`**: 一键部署脚本 / One-command deployment script
+
+---
+
+## 重要安全提示 / Important Security Notes
+
+1. **修改默认密码** / Change default password
+   - 首次登录后立即修改管理员密码
+   - Change admin password immediately after first login
+
+2. **保护 .env 文件** / Protect .env file
+   - 不要将 .env 文件提交到版本控制
+   - Never commit .env file to version control
+
+3. **使用强密码** / Use strong passwords
+   - 数据库密码至少 16 个字符
+   - Database password should be at least 16 characters
+
+4. **定期备份** / Regular backups
+   - 建议每天备份数据库
+   - Recommend daily database backups
+
+---
+
+## 获取帮助 / Getting Help
+
+如有问题，请检查：/ If you have issues, check:
+
+1. Docker 日志 / Docker logs: `docker compose logs -f`
+2. 服务状态 / Service status: `docker compose ps`
+3. 配置验证 / Configuration verification: `bash scripts/verify_installation.sh`
+
+详细文档 / Detailed documentation: `DEPLOYMENT_INSTRUCTIONS.md`
+
+---
+
+## 项目结构 / Project Structure
+
+```
+.
+├── deploy.sh                    # 一键部署脚本 / One-command deployment
+├── initialize.sh                # 初始化脚本 / Initialization script
+├── docker-compose.yml           # Docker 配置 / Docker configuration
+├── .env                         # 环境变量 / Environment variables
+├── taiga-gateway/
+│   └── taiga.conf              # Nginx 配置 / Nginx configuration
+├── taiga-front/
+│   ├── conf.json               # 前端配置 / Frontend config
+│   ├── custom-fields.js        # 自定义字段 JS / Custom fields JS
+│   └── custom-fields.css       # 自定义字段样式 / Custom fields CSS
+├── taiga-custom/
+│   ├── signals.py              # 自动分配逻辑 / Auto-assign logic
+│   ├── settings.py             # Django 设置扩展 / Django settings extension
+│   └── management/
+│       └── commands/           # 管理命令 / Management commands
+└── scripts/
+    ├── verify_installation.sh  # 验证脚本 / Verification script
+    └── test_auto_assign.sh     # 测试脚本 / Test script
+```
+
+---
+
+**祝您使用愉快！/ Enjoy using Taiga!** 🎉
