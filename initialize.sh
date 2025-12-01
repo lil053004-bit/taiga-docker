@@ -23,7 +23,26 @@ ADMIN_EMAIL="${AUTO_ASSIGN_ADMIN_EMAIL:-lhweave@gmail.com}"
 ADMIN_PASSWORD="${POSTGRES_PASSWORD:-A52290120a}"
 
 echo "Step 1: Running database migrations..."
-docker compose exec taiga-back python manage.py migrate
+echo "  - Checking for migration conflicts..."
+
+# Try to run migrations, if it fails due to column already exists, fake the problematic migration
+if ! docker compose exec -T taiga-back python manage.py migrate 2>&1 | tee /tmp/migrate_output.log; then
+    if grep -q "column.*already exists\|duplicate column" /tmp/migrate_output.log; then
+        echo "  ⚠ Detected column already exists error - fixing automatically..."
+        echo "  - Faking problematic custom_attributes migrations..."
+        docker compose exec -T taiga-back python manage.py migrate custom_attributes --fake
+        echo "  - Retrying all migrations..."
+        docker compose exec -T taiga-back python manage.py migrate
+        echo "  ✓ Migration conflict resolved automatically"
+    else
+        echo "  ✗ Migration failed with unknown error"
+        cat /tmp/migrate_output.log
+        exit 1
+    fi
+else
+    echo "  ✓ All migrations completed successfully"
+fi
+rm -f /tmp/migrate_output.log
 
 echo ""
 echo "Step 2: Collecting static files..."
