@@ -41,7 +41,6 @@ x-volumes:
   - taiga-static-data:/taiga-back/static
   - taiga-media-data:/taiga-back/media
   - ./taiga-custom:/taiga-back/custom
-  - ./taiga-custom/config.py:/taiga-back/settings/config.py
   - ./logs:/taiga-back/logs
 
 services:
